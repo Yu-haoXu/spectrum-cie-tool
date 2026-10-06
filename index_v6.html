@@ -1,0 +1,1244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spectrum → CIE & sRGB</title>
+<!-- v6: multiple optional imported reflectance spectra/files; imported data only affects results when explicitly used. Mismatched wavelength grids trigger warnings and are interpolated onto the first referenced/selected grid. -->
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#17191c;--muted:#667085;--line:#d8dde5;--accent:#2563eb;--soft:#eef4ff;--bad:#b42318;--good:#067647;}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:24px 28px 18px;background:linear-gradient(180deg,#fff,rgba(255,255,255,.75));border-bottom:1px solid var(--line)}
+h1{font-size:24px;margin:0 0 5px;font-weight:720;letter-spacing:-.02em}.sub{color:var(--muted);font-size:13px}
+main{max-width:1500px;margin:0 auto;padding:20px;display:grid;grid-template-columns:minmax(340px,430px) minmax(0,1fr);gap:18px}
+@media(max-width:1000px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(16,24,40,.04);padding:16px;margin-bottom:14px}
+.card h2{font-size:14px;margin:0 0 12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+label{display:block;font-size:12px;color:#344054;margin-bottom:5px;font-weight:600} input,select,textarea,button{font:inherit}
+input[type=text],input[type=number],select,textarea{width:100%;border:1px solid #cfd5df;border-radius:9px;padding:8px 9px;background:#fff;color:#111827;outline:none}
+textarea{min-height:150px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.4}
+input:focus,select:focus,textarea:focus{border-color:#84adff;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+button{border:1px solid #cfd5df;background:#fff;border-radius:9px;padding:8px 11px;cursor:pointer;font-weight:650;color:#344054} button.primary{background:var(--accent);color:#fff;border-color:var(--accent)} button:hover{filter:brightness(.98)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.row .fit{flex:0 0 auto}.hint{font-size:11px;color:var(--muted);line-height:1.45;margin-top:6px}.status{font-size:12px;margin-top:8px;padding:8px 9px;border-radius:8px;background:#f8fafc;color:#475467}.status.bad{background:#fff1f0;color:var(--bad)}.status.good{background:#ecfdf3;color:var(--good)}.status.warn{background:#fffaeb;color:#b54708;border:1px solid #fedf89}.syntax-warn{color:#b54708}
+.hidden{display:none!important}.check{display:flex;gap:7px;align-items:center;font-size:12px;color:#344054}.check input{width:auto}
+.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}.result-card{border:1px solid var(--line);border-radius:12px;padding:13px;background:#fff}.result-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.result-name{font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.swatch{width:56px;height:56px;border-radius:10px;border:1px solid rgba(0,0,0,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.kv{display:grid;grid-template-columns:58px 1fr;gap:4px 9px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px}.kv .k{color:var(--muted)}
+.chart-wrap{border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff;overflow:hidden}.chart-title{font-size:12px;font-weight:700;margin:3px 5px 7px} svg{display:block;width:100%;height:auto}.axis{stroke:#98a2b3;stroke-width:1}.grid{stroke:#eaecf0;stroke-width:1}.tick{font-size:10px;fill:#667085}.legend{font-size:10px;fill:#475467}.pt{stroke:#111827;stroke-width:1.3}.pill{display:inline-block;padding:3px 7px;border-radius:999px;background:var(--soft);color:#1849a9;font-size:10px;font-weight:700}
+.notice{background:#fffaeb;border:1px solid #fedf89;color:#7a2e0e;border-radius:10px;padding:9px 10px;font-size:11px;line-height:1.45;margin-bottom:12px}
+footer{max-width:1500px;margin:0 auto;padding:0 20px 28px;color:var(--muted);font-size:11px;line-height:1.5}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f2f4f7;border-radius:5px;padding:1px 4px}
+.example-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.example-btn,.illum-example-btn,.sample-example-btn{font-size:11px;padding:5px 8px;font-weight:600;background:#f8fafc}.example-btn:hover,.illum-example-btn:hover,.sample-example-btn:hover{background:#eef4ff;border-color:#84adff}
+.expr-builder-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:7px}.builder-label{font-size:11px;color:var(--muted);font-weight:650;margin-right:2px}.sample-op-btn{min-width:34px;padding:5px 9px;font-size:13px;background:#fff}.sample-op-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}.builder-action{font-size:11px;padding:5px 8px;background:#f8fafc}
+.expr-editor-shell{position:relative;margin-top:8px}.expr-code-wrap{position:relative;min-height:165px;border:1px solid #cfd5df;border-radius:9px;background:#fbfcfe;overflow:hidden}.expr-code-wrap:focus-within{border-color:#84adff;box-shadow:0 0 0 3px rgba(37,99,235,.1)}.expr-highlight,.expr-editor{margin:0;width:100%;min-height:165px;max-height:520px;padding:10px 11px;border:0!important;border-radius:8px;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;overflow-x:hidden;overflow-y:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.55;tab-size:2}.expr-highlight{position:absolute;inset:0;z-index:1;pointer-events:none;color:#1f2937;background:transparent;resize:none}.expr-editor{position:relative;z-index:2;background:transparent!important;color:transparent!important;-webkit-text-fill-color:transparent;caret-color:#111827;outline:none}.expr-editor::selection{background:rgba(37,99,235,.20);-webkit-text-fill-color:transparent}.expr-highlight .tok-fn{color:#0759b8;font-weight:700}.expr-highlight .tok-num{color:#b54708}.expr-highlight .tok-var{color:#067647;font-weight:650}.expr-highlight .tok-op{color:#7f56d9;font-weight:700}.expr-highlight .tok-paren{color:#344054;font-weight:700}.expr-highlight .tok-const{color:#9e165f;font-weight:650}.expr-highlight .tok-invalid{color:#b42318;text-decoration:underline wavy #b42318}.expr-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;align-items:center}.expr-toolbar button{font-size:11px;padding:5px 8px;background:#f8fafc}.expr-meta{margin-left:auto;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}.syntax-ok{color:var(--good)}.syntax-bad{color:var(--bad)}.expr-editor-shell.expanded{position:fixed;inset:18px;z-index:1000;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 24px 80px rgba(16,24,40,.25);padding:18px;display:flex;flex-direction:column}.expr-editor-shell.expanded:before{content:'Sample spectrum expression editor';font-weight:750;font-size:14px;margin-bottom:10px}.expr-editor-shell.expanded .expr-code-wrap{flex:1;min-height:0}.expr-editor-shell.expanded .expr-editor,.expr-editor-shell.expanded .expr-highlight{height:100%;min-height:0;max-height:none;font-size:14px}.expr-editor-shell.expanded .expr-editor{resize:none}.expr-editor-shell.expanded .expr-toolbar{flex:0 0 auto}.expr-editor-shell.expanded .expr-help-local{display:block}.expr-help-local{display:none;font-size:11px;color:var(--muted);line-height:1.45;margin-top:7px}.editor-backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.32);z-index:999}.editor-backdrop.show{display:block}
+</style>
+</head>
+<body>
+<header>
+  <h1>Spectrum → CIE & sRGB</h1>
+  <div class="sub">CIE 1931 2° colorimetry · reflectance/transmittance or emission SPD · custom illuminants · multi-spectrum input</div>
+</header>
+<main>
+<section>
+  <div class="card">
+    <h2>1. Spectrum input</h2>
+    <div class="grid2">
+      <div><label>Measurement type</label><select id="mode"><option value="object">Reflectance / transmittance</option><option value="emission">Emission / radiance SPD</option></select></div>
+      <div><label>Spectrum scale</label><select id="scale"><option value="1">As-is</option><option value="0.01">Percent → fraction (÷100)</option></select></div>
+    </div>
+    <div style="margin-top:10px"><label>Optional imported reflectance / transmittance spectra</label><input id="spectrumFile" type="file" accept=".csv,.txt,.dat,.tsv" multiple /></div>
+    <div class="hint">You may select <b>multiple files</b>; every imported spectrum is assigned <span class="code">I1</span>, <span class="code">I2</span>, ... . Importing alone does <b>not</b> change the final input or trigger color calculation. The imported spectra only affect results when you explicitly reference them in the analytic expression or click <b>Use imported spectra as final input</b>. If wavelength grids differ, a warning is shown. For combined calculations, the first referenced/selected spectrum defines the wavelength grid and the others are linearly interpolated onto it.</div>
+    <div class="row" style="margin-top:7px"><button type="button" id="useImportedBtn">Use imported spectra as final input</button><button type="button" id="clearImportedBtn">Clear imported spectra</button></div>
+    <div id="importedSpectrumStatus" class="status">No optional spectra imported.</div>
+    <div style="margin-top:10px"><label>Final input spectrum (used for plots and CIE calculation)</label><textarea id="dataText" placeholder="wavelength, sample_A, sample_B&#10;400, 0.10, 0.05&#10;405, 0.12, 0.06&#10;..."></textarea></div>
+
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+      <label>Or generate the final input spectrum from an analytic expression</label>
+      <div class="hint">Normal behavior is unchanged: if the expression does not use <span class="code">I1</span>, <span class="code">I2</span>, ... the λ start/end/step settings below are used. If an imported spectrum is referenced, its wavelength grid is used automatically.</div>
+      <div class="grid3" style="margin-top:7px">
+        <div><label>λ start (nm)</label><input id="sampleWlStart" type="number" value="380" step="1"></div>
+        <div><label>λ end (nm)</label><input id="sampleWlEnd" type="number" value="780" step="1"></div>
+        <div><label>λ step (nm)</label><input id="sampleWlStep" type="number" value="1" step="0.1" min="0.0001"></div>
+      </div>
+      <div class="grid2" style="margin-top:8px">
+        <div><label>Spectrum name</label><input id="sampleExprName" type="text" value="Analytic_reflectance"></div>
+        <div class="check" style="align-self:end;padding-bottom:8px"><input id="sampleNormalize" type="checkbox" checked><span>Normalize final expression to 0–1 after all arithmetic</span></div>
+      </div>
+      <div id="sampleExprShell" class="expr-editor-shell">
+        <label>Sample spectrum expression R(λ) / T(λ)</label>
+        <div id="sampleExprWrap" class="expr-code-wrap">
+          <pre id="sampleExprHighlight" class="expr-highlight" aria-hidden="true"></pre>
+          <textarea id="sampleExpr" class="expr-editor" rows="7" wrap="soft" spellcheck="false" autocomplete="off" autocapitalize="off">0.05 + 0.85*lorentz(550,60)</textarea>
+        </div>
+        <div class="expr-toolbar">
+          <button type="button" id="sampleFormatBtn">Format</button>
+          <button type="button" id="sampleCompactBtn">Compact</button>
+          <button type="button" id="sampleCheckBtn">Check syntax</button>
+          <button type="button" id="sampleExpandBtn">Expand editor</button>
+          <span id="sampleExprMeta" class="expr-meta">1 line · 31 chars</span>
+        </div>
+        <div id="sampleSyntaxStatus" class="hint">Origin-style highlighting is live · functions are blue · lines wrap automatically · Ctrl+Enter: generate · Tab: indent.</div>
+        <div class="expr-help-local">Use <span class="code">wl</span> for wavelength. Multiline whitespace is ignored by the parser. Operators: <span class="code">+ - * / ^</span>. Functions can be nested freely, e.g. <span class="code">(notch(...) + 10*longpass(...)) / (1 + gauss(...))</span>.</div>
+      </div>
+      <div id="editorBackdrop" class="editor-backdrop"></div>
+      <div class="hint">Variables: <span class="code">wl</span> (nm); optional imported spectra <span class="code">I1</span>, <span class="code">I2</span>, ... . Operators: <span class="code">+ - * / ^</span>. Functions include <span class="code">exp</span>, <span class="code">log</span>, <span class="code">sqrt</span>, <span class="code">abs</span>, <span class="code">sin</span>, <span class="code">cos</span>, <span class="code">tan</span>, <span class="code">gauss(center,FWHM)</span>, <span class="code">lorentz(center,FWHM)</span>, <span class="code">step(edge)</span>, <span class="code">heaviside(x)</span>, <span class="code">shortpass(cutoff,width)</span>, <span class="code">longpass(cutoff,width)</span>, <span class="code">bandpass(low,high,width)</span>, and <span class="code">notch(center,bandwidth,depth,edgeWidth)</span> (or <span class="code">notch(center,bandwidth,depth,fallWidth,riseWidth)</span>). These functions generate the <b>sample spectrum itself</b>; the selected illuminant is applied separately during colorimetry. Each primitive profile such as <span class="code">step</span>, <span class="code">lorentz</span>, <span class="code">bandpass</span>, and <span class="code">notch</span> is intrinsically normalized to the 0–1 range. External coefficients are preserved during arithmetic. When <b>Normalize final expression</b> is enabled, the complete expression is evaluated first, negative values are set to 0, and only then the whole spectrum is divided by its positive maximum. Thus <span class="code">notch(...) + 100*step(...)</span> keeps the 1:100 weighting before the final reflectance normalization.</div>
+      <div class="hint" style="margin-top:9px"><b>Sample-spectrum function builder — choose an operator, then click a function:</b></div>
+      <div class="expr-builder-row">
+        <span class="builder-label">Next operation</span>
+        <button type="button" class="sample-op-btn active" data-op="+">+</button>
+        <button type="button" class="sample-op-btn" data-op="-">−</button>
+        <button type="button" class="sample-op-btn" data-op="*">×</button>
+        <button type="button" class="sample-op-btn" data-op="/">÷</button>
+        <button type="button" id="sampleWrapBtn" class="builder-action">Wrap current ( )</button>
+        <button type="button" id="sampleUndoBtn" class="builder-action">Undo last</button>
+        <button type="button" id="sampleClearExprBtn" class="builder-action">Clear</button>
+      </div>
+      <div class="example-grid">
+        <button type="button" class="sample-example-btn" data-sample-expr="step(550)">Step</button>
+        <button type="button" class="sample-example-btn" data-sample-expr="0.05 + 0.85*lorentz(550,60)">Lorentzian</button>
+        <button type="button" class="sample-example-btn" data-sample-expr="0.5 + 0.4*sin(2*pi*(wl-380)/100)">Sine</button>
+        <button type="button" class="sample-example-btn" data-sample-expr="0.9*exp(-(wl-380)/180)">Exponential</button>
+        <button type="button" class="sample-example-btn" data-sample-expr="0.05 + 0.9*bandpass(450,650,10)">Band-pass</button>
+        <button type="button" class="sample-example-btn" data-sample-expr="notch(550,60,0.9,8)">Notch</button>
+        <button type="button" class="sample-example-btn" data-sample-expr="0.05 + 0.9*shortpass(550,10)">Short-pass</button>
+        <button type="button" class="sample-example-btn" data-sample-expr="0.05 + 0.9*longpass(550,10)">Long-pass</button>
+      </div>
+      <div class="hint">Each function click is appended instead of replacing the current expression. The builder automatically groups both sides, e.g. <span class="code">(old) * (new)</span>. If you do not change the operator, <span class="code">+</span> is used.</div>
+      <div class="hint"><b>Coefficient example:</b> <span class="code">notch(550,100,0.9,8) + 100*step(630)</span> is evaluated with the full 100× weighting first. With final normalization enabled, the resulting spectrum is then scaled once so its maximum is 1; the coefficient is therefore not lost.</div>
+      <div class="row" style="margin-top:9px"><button id="generateSampleBtn" class="primary">Generate / replace input</button><button id="addSampleBtn">Add as another spectrum</button></div>
+      <div id="sampleExprStatus" class="status">Analytic sample generator ready.</div>
+    </div>
+
+    <div class="row" style="margin-top:8px"><button id="sampleBtn">Load example data</button><button id="clearBtn">Clear</button></div>
+    <div id="inputStatus" class="status">No spectrum loaded.</div>
+  </div>
+
+  <div class="card">
+    <h2>2. Illuminant</h2>
+    <div class="grid2">
+      <div><label>Illuminant type</label><select id="illumType">
+        <option value="D65">CIE D65</option><option value="E">Equal-energy E</option><option value="A">CIE A (Planck form)</option><option value="BB">Blackbody</option><option value="GAUSS">Gaussian</option><option value="LORENTZ">Lorentzian</option><option value="EXPR">Custom expression</option><option value="IMPORT">Imported illuminant</option>
+      </select></div>
+      <div><label>Intensity multiplier</label><input id="illumIntensity" type="number" value="1" step="0.1" min="0" /></div>
+    </div>
+
+    <div id="bbParams" class="grid2 hidden" style="margin-top:10px"><div><label>Temperature (K)</label><input id="bbT" type="number" value="6500" min="500" max="50000" /></div><div></div></div>
+    <div id="peakParams" class="grid2 hidden" style="margin-top:10px"><div><label>Center λ₀ (nm)</label><input id="peakCenter" type="number" value="550" /></div><div><label>FWHM (nm)</label><input id="peakFwhm" type="number" value="40" min="0.001" /></div></div>
+    <div id="exprParams" class="hidden" style="margin-top:10px">
+      <label>Expression</label><input id="expr" type="text" value="0.7*D65 + 0.3*gauss(450,30)" />
+      <div class="hint">Use <span class="code">wl</span>, + − × ÷ ^, parentheses, and functions <span class="code">exp</span>, <span class="code">log</span>, <span class="code">sqrt</span>, <span class="code">abs</span>, <span class="code">sin</span>, <span class="code">cos</span>, <span class="code">tan</span>, <span class="code">pow(a,b)</span>, <span class="code">gauss(center,FWHM)</span>, <span class="code">lorentz(center,FWHM)</span>, <span class="code">bb(T)</span>, <span class="code">step(edge)</span>, <span class="code">heaviside(x)</span>, <span class="code">shortpass(cutoff,width)</span>, <span class="code">longpass(cutoff,width)</span>, <span class="code">bandpass(low,high,width)</span>, and <span class="code">notch(center,bandwidth,depth,edgeWidth)</span> or <span class="code">notch(center,bandwidth,depth,fallWidth,riseWidth)</span>. Built-ins: <span class="code">D65</span>, <span class="code">A</span>, <span class="code">E</span>, imported spectrum <span class="code">I</span>, and <span class="code">pi</span>. Filter functions return values near 0–1; <span class="code">width</span> controls the smooth transition scale in nm.</div>
+      <div class="hint" style="margin-top:9px"><b>Example expressions — click to load:</b></div>
+      <div class="example-grid">
+        <button type="button" class="illum-example-btn" data-expr="step(550)">Step</button>
+        <button type="button" class="illum-example-btn" data-expr="lorentz(550,40)">Lorentzian</button>
+        <button type="button" class="illum-example-btn" data-expr="0.5 + 0.5*sin(2*pi*(wl-380)/80)">Sine</button>
+        <button type="button" class="illum-example-btn" data-expr="exp(-(wl-380)/120)">Exponential</button>
+        <button type="button" class="illum-example-btn" data-expr="bandpass(450,650,10)">Band-pass</button>
+        <button type="button" class="illum-example-btn" data-expr="notch(550,60,0.9,8)">Notch</button>
+        <button type="button" class="illum-example-btn" data-expr="shortpass(550,10)">Short-pass</button>
+        <button type="button" class="illum-example-btn" data-expr="longpass(550,10)">Long-pass</button>
+        <button type="button" class="illum-example-btn" data-expr="D65*bandpass(430,680,12)">D65 × Band-pass</button>
+        <button type="button" class="illum-example-btn" data-expr="D65*(1-0.8*lorentz(590,35))">D65 + Notch</button>
+      </div>
+    </div>
+    <div id="importParams" class="hidden" style="margin-top:10px"><label>Import illuminant CSV / TXT</label><input id="illumFile" type="file" accept=".csv,.txt,.dat,.tsv" /><div class="hint">Two numeric columns: wavelength (nm), relative spectral power.</div></div>
+    <div class="check" style="margin-top:10px"><input id="adapt" type="checkbox" checked><span>Bradford-adapt non-D65 object colors to D65 before sRGB display</span></div>
+    <div id="illumStatus" class="status">D65 selected.</div>
+  </div>
+
+  <div class="card">
+    <h2>3. Calculation</h2>
+    <div class="check"><input id="clipNeg" type="checkbox" checked><span>Clip negative spectral values to zero</span></div>
+    <div class="check" style="margin-top:7px"><input id="normalizeEmission" type="checkbox" checked><span>Normalize emission RGB preview by luminance (xy is unaffected)</span></div>
+    <div class="grid2" style="margin-top:10px">
+      <div><label>Object RGB display mode</label><select id="rgbDisplayMode">
+        <option value="intensity" selected>Intensity-aware / exposure</option>
+        <option value="normalized">Normalized / saturated color</option>
+      </select></div>
+      <div style="display:flex;align-items:flex-end"><button id="resetRgbBtn" type="button">Reset to normalized color</button></div>
+    </div>
+    <div class="hint" style="margin-top:7px">In <b>Intensity-aware</b> mode, the illuminant intensity multiplier scales object XYZ before sRGB clipping: dim light gives darker RGB, while sufficiently strong light can drive all positive channels toward 255 (white saturation). <b>Normalized / saturated</b> rescales the linear RGB so its largest channel is 1, preserving the color appearance without absolute brightness.</div>
+    <div class="row" style="margin-top:12px"><button class="primary" id="calcBtn">Calculate</button><button id="exportBtn">Export results CSV</button><button id="exportMatlabBtn">Export MATLAB script</button></div><div class="hint" style="margin-top:7px">The MATLAB export is self-contained: it embeds the currently loaded spectra, the active illuminant sampled on the wavelength grid, CIE observer data, and the current color/display settings. Running the .m file reproduces the calculations and opens the figures. It does not save files by default; set saveFiles = true inside the MATLAB script only when you want CSV/MAT/PNG/FIG outputs.</div>
+    <div id="calcStatus" class="status">Ready.</div>
+  </div>
+</section>
+
+<section>
+  <div class="notice">For reflectance/transmittance, the calculation uses <b>sample spectrum × illuminant × CIE 1931 color-matching functions</b>. The illuminant <i>shape</i> is normalized so a perfect diffuser has Y = 1 at intensity = 1, while the separate <b>Intensity multiplier</b> scales the resulting object XYZ and therefore its RGB brightness/exposure. CIE x,y remain unchanged by a uniform intensity scaling. For emission SPD, no illuminant multiplication is applied.</div>
+  <div class="card"><h2>Results</h2><div id="results" class="results"><div class="hint">Load a spectrum and press Calculate.</div></div></div>
+  <div class="card"><h2>Plots</h2><div class="grid2"><div class="chart-wrap"><div class="chart-title">Input spectra</div><div id="spectrumPlot"></div></div><div class="chart-wrap"><div class="chart-title">Illuminant / effective SPD</div><div id="illumPlot"></div></div></div><div class="chart-wrap" style="margin-top:12px"><div class="chart-title">CIE 1931 xy chromaticity</div><div class="row" style="margin:0 5px 8px;gap:14px"><label class="check fit"><input id="cieEqualAxes" type="checkbox" checked><span>Equal x/y scale</span></label><label class="check fit"><input id="cieBg" type="checkbox" checked><span>Chromaticity background</span></label></div><div id="ciePlot"></div></div></div>
+</section>
+</main>
+<footer>
+CIE 1931 2° standard observer and CIE D65 are implemented from standard tabulations/interpolation. Reference datasets: CIE 1931 colour-matching functions, DOI 10.25039/CIE.DS.xvudnb9b; CIE standard illuminant D65, DOI 10.25039/CIE.DS.hjfjmt59. sRGB uses the standard D65 XYZ→linear-sRGB matrix and IEC-style transfer function. This tool is intended for scientific visualization; monitor calibration and gamut limitations affect on-screen appearance.
+</footer>
+<script>
+'use strict';
+
+const CMF_TEXT = `
+380 0.001368 0.000039 0.006450
+385 0.002236 0.000064 0.010550
+390 0.004243 0.000120 0.020050
+395 0.007650 0.000217 0.036210
+400 0.014310 0.000396 0.067850
+405 0.023190 0.000640 0.110200
+410 0.043510 0.001210 0.207400
+415 0.077630 0.002180 0.371300
+420 0.134380 0.004000 0.645600
+425 0.214770 0.007300 1.039050
+430 0.283900 0.011600 1.385600
+435 0.328500 0.016840 1.622960
+440 0.348280 0.023000 1.747060
+445 0.348060 0.029800 1.782600
+450 0.336200 0.038000 1.772110
+455 0.318700 0.048000 1.744100
+460 0.290800 0.060000 1.669200
+465 0.251100 0.073900 1.528100
+470 0.195360 0.090980 1.287640
+475 0.142100 0.112600 1.041900
+480 0.095640 0.139020 0.812950
+485 0.057950 0.169300 0.616200
+490 0.032010 0.208020 0.465180
+495 0.014700 0.258600 0.353300
+500 0.004900 0.323000 0.272000
+505 0.002400 0.407300 0.212300
+510 0.009300 0.503000 0.158200
+515 0.029100 0.608200 0.111700
+520 0.063270 0.710000 0.078250
+525 0.109600 0.793200 0.057250
+530 0.165500 0.862000 0.042160
+535 0.225750 0.914850 0.029840
+540 0.290400 0.954000 0.020300
+545 0.359700 0.980300 0.013400
+550 0.433450 0.994950 0.008750
+555 0.512050 1.000000 0.005750
+560 0.594500 0.995000 0.003900
+565 0.678400 0.978600 0.002750
+570 0.762100 0.952000 0.002100
+575 0.842500 0.915400 0.001800
+580 0.916300 0.870000 0.001650
+585 0.978600 0.816300 0.001400
+590 1.026300 0.757000 0.001100
+595 1.056700 0.694900 0.001000
+600 1.062200 0.631000 0.000800
+605 1.045600 0.566800 0.000600
+610 1.002600 0.503000 0.000340
+615 0.938400 0.441200 0.000240
+620 0.854450 0.381000 0.000190
+625 0.751400 0.321000 0.000100
+630 0.642400 0.265000 0.000050
+635 0.541900 0.217000 0.000030
+640 0.447900 0.175000 0.000020
+645 0.360800 0.138200 0.000010
+650 0.283500 0.107000 0.000000
+655 0.218700 0.081600 0.000000
+660 0.164900 0.061000 0.000000
+665 0.121200 0.044580 0.000000
+670 0.087400 0.032000 0.000000
+675 0.063600 0.023200 0.000000
+680 0.046770 0.017000 0.000000
+685 0.032900 0.011920 0.000000
+690 0.022700 0.008210 0.000000
+695 0.015840 0.005723 0.000000
+700 0.011359 0.004102 0.000000
+705 0.008111 0.002929 0.000000
+710 0.005790 0.002091 0.000000
+715 0.004109 0.001484 0.000000
+720 0.002899 0.001047 0.000000
+725 0.002049 0.000740 0.000000
+730 0.001440 0.000520 0.000000
+735 0.001000 0.000361 0.000000
+740 0.000690 0.000249 0.000000
+745 0.000476 0.000172 0.000000
+750 0.000332 0.000120 0.000000
+755 0.000235 0.000085 0.000000
+760 0.000166 0.000060 0.000000
+765 0.000117 0.000042 0.000000
+770 0.000083 0.000030 0.000000
+775 0.000059 0.000021 0.000000
+780 0.000042 0.000015 0.000000`;
+
+const D65_TEXT = `
+380 49.9755
+385 52.3118
+390 54.6482
+395 68.7015
+400 82.7549
+405 87.1204
+410 91.4860
+415 92.4589
+420 93.4318
+425 90.0570
+430 86.6823
+435 95.7736
+440 104.8650
+445 110.9360
+450 117.0080
+455 117.4100
+460 117.8120
+465 116.3360
+470 114.8610
+475 115.3920
+480 115.9230
+485 112.3670
+490 108.8110
+495 109.0820
+500 109.3540
+505 108.5780
+510 107.8020
+515 106.2960
+520 104.7900
+525 106.2390
+530 107.6890
+535 106.0470
+540 104.4050
+545 104.2250
+550 104.0460
+555 102.0230
+560 100.0000
+565 98.1671
+570 96.3342
+575 96.0611
+580 95.7880
+585 92.2368
+590 88.6856
+595 89.3459
+600 90.0062
+605 89.8026
+610 89.5991
+615 88.6489
+620 87.6987
+625 85.4936
+630 83.2886
+635 83.4939
+640 83.6992
+645 81.8630
+650 80.0268
+655 80.1207
+660 80.2146
+665 81.2462
+670 82.2778
+675 80.2810
+680 78.2842
+685 74.0027
+690 69.7213
+695 70.6652
+700 71.6091
+705 72.9790
+710 74.3490
+715 67.9765
+720 61.6040
+725 65.7448
+730 69.8856
+735 72.4863
+740 75.0870
+745 69.3398
+750 63.5927
+755 55.0054
+760 46.4182
+765 56.6118
+770 66.8054
+775 65.0941
+780 63.3828`;
+
+function rows(text){return text.trim().split(/\n+/).map(s=>s.trim().split(/\s+/).map(Number));}
+const CMF=rows(CMF_TEXT), D65=rows(D65_TEXT);
+const CMF_W=CMF.map(r=>r[0]), XB=CMF.map(r=>r[1]), YB=CMF.map(r=>r[2]), ZB=CMF.map(r=>r[3]);
+const D65_W=D65.map(r=>r[0]), D65_S=D65.map(r=>r[1]);
+let inputData=null, importedIllum=null, lastResults=[];
+
+const $=id=>document.getElementById(id);
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function interp1(x,y,q,out=0){
+  if(q<x[0]||q>x[x.length-1]) return out;
+  let lo=0,hi=x.length-1;
+  while(hi-lo>1){const m=(lo+hi)>>1;if(x[m]<=q)lo=m;else hi=m;}
+  if(q===x[lo]||lo===hi)return y[lo];
+  const t=(q-x[lo])/(x[hi]-x[lo]);return y[lo]*(1-t)+y[hi]*t;
+}
+function trapz(x,y){let s=0;for(let i=0;i<x.length-1;i++)s+=0.5*(y[i]+y[i+1])*(x[i+1]-x[i]);return s;}
+function planck(wlNm,T){
+  const wl=wlNm*1e-9,c2=1.438776877e-2;
+  if(wl<=0||T<=0)return 0;
+  return 1/(Math.pow(wl,5)*(Math.exp(c2/(wl*T))-1));
+}
+function illuminantA(wl){const v=planck(wl,2856),ref=planck(560,2856);return 100*v/ref;}
+function gaussian(wl,c,fwhm){const s=Math.abs(fwhm)/2.354820045;if(!s)return wl===c?1:0;return Math.exp(-0.5*Math.pow((wl-c)/s,2));}
+function lorentzian(wl,c,fwhm){const g=Math.abs(fwhm)/2;if(!g)return wl===c?1:0;return (g*g)/(Math.pow(wl-c,2)+g*g);}
+function logistic(x){if(x>50)return 1;if(x<-50)return 0;return 1/(1+Math.exp(-x));}
+function stepAt(wl,edge){return wl>=edge?1:0;}
+function shortpassAt(wl,cutoff,width){const w=Math.max(Math.abs(width||1),1e-12);return logistic((cutoff-wl)/w);}
+function longpassAt(wl,cutoff,width){const w=Math.max(Math.abs(width||1),1e-12);return logistic((wl-cutoff)/w);}
+function bandpassAt(wl,low,high,width){const lo=Math.min(low,high),hi=Math.max(low,high);return longpassAt(wl,lo,width)*shortpassAt(wl,hi,width);}
+function notchAt(wl,center,bandwidth,depth=1,fallWidth=10,riseWidth=fallWidth){
+  const bw=Math.max(Math.abs(bandwidth||0),1e-12);
+  const lo=center-bw/2, hi=center+bw/2;
+  const fw=Math.max(Math.abs(fallWidth||1),1e-12);
+  const rw=Math.max(Math.abs(riseWidth||fallWidth||1),1e-12);
+  const inside=longpassAt(wl,lo,fw)*shortpassAt(wl,hi,rw);
+  return 1-clamp(depth,0,1)*inside;
+}
+function d65at(wl){return interp1(D65_W,D65_S,wl,0)};
+function importedAt(wl){return importedIllum?interp1(importedIllum.wavelength,importedIllum.values,wl,0):0;}
+
+function tokenizeExpr(s){
+  const out=[]; let i=0;
+  while(i<s.length){const c=s[i]; if(/\s/.test(c)){i++;continue;}
+    if(/[0-9.]/.test(c)){let j=i+1;while(j<s.length&&/[0-9.eE+-]/.test(s[j])){if((s[j]=='+'||s[j]=='-')&&!/[eE]/.test(s[j-1]))break;j++;}const n=Number(s.slice(i,j));if(!Number.isFinite(n))throw Error('Invalid number');out.push({t:'num',v:n});i=j;continue;}
+    if(/[A-Za-z_]/.test(c)){let j=i+1;while(j<s.length&&/[A-Za-z0-9_]/.test(s[j]))j++;out.push({t:'id',v:s.slice(i,j)});i=j;continue;}
+    if('+-*/^(),'.includes(c)){out.push({t:c,v:c});i++;continue;}
+    throw Error('Unsupported character: '+c);
+  } return out;
+}
+function compileExpression(src,resolver=null){
+  const tok=tokenizeExpr(src);let p=0;
+  const peek=()=>tok[p],eat=t=>{if(!peek()||peek().t!==t)throw Error('Expected '+t);return tok[p++];};
+  function primary(){
+    const z=peek();if(!z)throw Error('Unexpected end');
+    if(z.t==='num'){p++;return ()=>z.v;}
+    if(z.t==='id'){
+      p++;const name=z.v.toLowerCase();
+      if(peek()&&peek().t==='('){p++;const args=[];if(peek()&&peek().t!==')'){args.push(expr());while(peek()&&peek().t===','){p++;args.push(expr());}}eat(')');
+        return wl=>{const a=args.map(f=>f(wl));switch(name){case'exp':return Math.exp(a[0]);case'log':return Math.log(a[0]);case'sqrt':return Math.sqrt(a[0]);case'abs':return Math.abs(a[0]);case'sin':return Math.sin(a[0]);case'cos':return Math.cos(a[0]);case'tan':return Math.tan(a[0]);case'pow':return Math.pow(a[0],a[1]);case'gauss':case'gaussian':return gaussian(wl,a[0],a[1]);case'lorentz':case'lorentzian':return lorentzian(wl,a[0],a[1]);case'step':return stepAt(wl,a[0]);case'heaviside':case'h':return a[0]>=0?1:0;case'shortpass':case'sp':return shortpassAt(wl,a[0],a.length>1?a[1]:10);case'longpass':case'lp':return longpassAt(wl,a[0],a.length>1?a[1]:10);case'bandpass':case'bp':return bandpassAt(wl,a[0],a[1],a.length>2?a[2]:10);case'notch':return notchAt(wl,a[0],a[1],a.length>2?a[2]:1,a.length>3?a[3]:10,a.length>4?a[4]:(a.length>3?a[3]:10));case'bb':case'blackbody':{const v=planck(wl,a[0]),r=planck(560,a[0]);return v/r*100;}case'd65':return d65at(wl);case'a':return illuminantA(wl);case'e':return 100;case'i':return importedAt(wl);default:throw Error('Unknown function: '+name);}};
+      }
+      return wl=>{switch(name){case'wl':case'lambda':return wl;case'pi':return Math.PI;case'e':return 100;case'd65':return d65at(wl);case'a':return illuminantA(wl);case'i':return importedAt(wl);default:{const rv=resolver?resolver(name,wl):undefined;if(rv!==undefined)return rv;throw Error('Unknown name: '+name);}}};
+    }
+    if(z.t==='('){p++;const f=expr();eat(')');return f;}
+    throw Error('Unexpected token');
+  }
+  function unary(){if(peek()&&peek().t==='+'){p++;return unary();}if(peek()&&peek().t==='-'){p++;const f=unary();return wl=>-f(wl);}return primary();}
+  function power(){let f=unary();if(peek()&&peek().t==='^'){p++;const g=power(),a=f;f=wl=>Math.pow(a(wl),g(wl));}return f;}
+  function term(){let f=power();while(peek()&&(peek().t==='*'||peek().t==='/')){const op=tok[p++].t,g=power(),a=f;f=op==='*'?(wl=>a(wl)*g(wl)):(wl=>a(wl)/g(wl));}return f;}
+  function expr(){let f=term();while(peek()&&(peek().t==='+'||peek().t==='-')){const op=tok[p++].t,g=term(),a=f;f=op==='+'?(wl=>a(wl)+g(wl)):(wl=>a(wl)-g(wl));}return f;}
+  const f=expr();if(p!==tok.length)throw Error('Unexpected token near '+tok[p].v);return f;
+}
+
+function getIlluminant(wl,applyIntensity=true){
+  const type=$('illumType').value,I=Math.max(0,Number($('illumIntensity').value)||0);
+  let f;
+  if(type==='D65')f=d65at; else if(type==='E')f=()=>100; else if(type==='A')f=illuminantA;
+  else if(type==='BB'){const T=Number($('bbT').value);f=x=>{const r=planck(560,T);return 100*planck(x,T)/r;};}
+  else if(type==='GAUSS'){const c=Number($('peakCenter').value),w=Number($('peakFwhm').value);f=x=>100*gaussian(x,c,w);}
+  else if(type==='LORENTZ'){const c=Number($('peakCenter').value),w=Number($('peakFwhm').value);f=x=>100*lorentzian(x,c,w);}
+  else if(type==='IMPORT'){if(!importedIllum)throw Error('No illuminant file imported.');f=importedAt;}
+  else {f=compileExpression($('expr').value);}
+  const gain=applyIntensity?I:1;
+  return wl.map(x=>Math.max(0,(Number(f(x))||0)*gain));
+}
+
+function parseMatrixText(text,defaultName='Spectrum 1'){
+  const raw=text.replace(/\r/g,'').split('\n').map(s=>s.trim()).filter(s=>s&&!s.startsWith('#')&&!s.startsWith('%'));
+  if(raw.length<2)throw Error('Need at least two rows.');
+
+  // Special two-column format used by files such as spe100.txt:
+  // wavelength:value,   e.g. 500:9.11867e-05,
+  const num='[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?';
+  const colonRe=new RegExp('^\\s*('+num+')\\s*:\\s*('+num+')\\s*,?\\s*$');
+  const colonRows=[];
+  let allColon=true;
+  for(const line of raw){
+    const m=line.match(colonRe);
+    if(!m){allColon=false;break;}
+    colonRows.push([Number(m[1]),Number(m[2])]);
+  }
+  if(allColon&&colonRows.length>=2){
+    colonRows.sort((a,b)=>a[0]-b[0]);
+    const wl=colonRows.map(r=>r[0]);
+    for(let i=1;i<wl.length;i++)if(wl[i]<=wl[i-1])throw Error('Wavelengths must be unique and increasing.');
+    return {wavelength:wl,spectra:[colonRows.map(r=>r[1])],names:[defaultName||'Spectrum 1']};
+  }
+
+  // Standard matrix input: comma, semicolon, tab, or whitespace separated.
+  const delim=/[\s,;\t]+/;
+  function split(line){return line.split(delim).map(s=>s.trim()).filter(Boolean);}
+  const first=split(raw[0]); const header=first.some(x=>!Number.isFinite(Number(x)));
+  let names=null,start=0;
+  if(header){names=first.slice(1);start=1;}
+  const data=[];
+  for(let i=start;i<raw.length;i++){
+    const a=split(raw[i]).map(Number);
+    if(a.length>=2&&a.every(Number.isFinite))data.push(a);
+  }
+  if(data.length<2)throw Error('Could not find enough numeric rows. Supported formats include CSV/TXT matrices and wavelength:value, lines.');
+  const ncol=Math.min(...data.map(r=>r.length)); if(ncol<2)throw Error('Need wavelength + at least one spectrum column.');
+  data.forEach(r=>r.length=ncol);data.sort((a,b)=>a[0]-b[0]);
+  const wl=data.map(r=>r[0]);for(let i=1;i<wl.length;i++)if(wl[i]<=wl[i-1])throw Error('Wavelengths must be unique and increasing.');
+  const spectra=[];for(let j=1;j<ncol;j++)spectra.push(data.map(r=>r[j]));
+  if(!names||names.length<ncol-1){
+    names=Array.from({length:ncol-1},(_,i)=>ncol===2?(defaultName||'Spectrum 1'):'Spectrum '+(i+1));
+  }else names=names.slice(0,ncol-1);
+  return {wavelength:wl,spectra,names};
+}
+
+function setStatus(id,msg,kind=''){const el=$(id);el.textContent=msg;el.className='status '+kind;}
+async function readFile(file){return await file.text();}
+
+function xyzToXy(X,Y,Z){const s=X+Y+Z;return s>1e-15?[X/s,Y/s]:[0,0];}
+function xyToXYZ(x,y){if(y<=0)return [0,0,0];return [x/y,1,(1-x-y)/y];}
+const BRAD=[[0.8951,0.2664,-0.1614],[-0.7502,1.7135,0.0367],[0.0389,-0.0685,1.0296]];
+const BRAD_INV=[[0.9869929,-0.1470543,0.1599627],[0.4323053,0.5183603,0.0492912],[-0.0085287,0.0400428,0.9684867]];
+function matVec(M,v){return M.map(r=>r[0]*v[0]+r[1]*v[1]+r[2]*v[2]);}
+function bradfordAdapt(XYZ,srcXYZ,dstXYZ=[0.95047,1,1.08883]){const s=matVec(BRAD,srcXYZ),d=matVec(BRAD,dstXYZ),v=matVec(BRAD,XYZ);return matVec(BRAD_INV,[v[0]*d[0]/s[0],v[1]*d[1]/s[1],v[2]*d[2]/s[2]]);}
+function srgbFromXYZ(XYZ,normalize=false){
+  let [X,Y,Z]=XYZ;let lin=[3.2406*X-1.5372*Y-0.4986*Z,-0.9689*X+1.8758*Y+0.0415*Z,0.0557*X-0.2040*Y+1.0570*Z];
+  if(normalize){const m=Math.max(...lin);if(m>0)lin=lin.map(v=>v/m);}
+  const oog=lin.some(v=>v<0||v>1);lin=lin.map(v=>clamp(v,0,1));
+  const enc=lin.map(v=>v<=0.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-0.055);
+  const rgb=enc.map(v=>Math.round(clamp(v,0,1)*255));return {rgb,oog,linear:lin};
+}
+function rgbHex(rgb){return '#'+rgb.map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();}
+
+function calculate(){
+  if(!inputData){setStatus('calcStatus','Load or paste spectrum data first.','bad');return;}
+  try{
+    const wl=inputData.wavelength, scale=Number($('scale').value),clip=$('clipNeg').checked,mode=$('mode').value;
+    const intensity=Math.max(0,Number($('illumIntensity').value)||0);
+    const rgbMode=$('rgbDisplayMode').value;
+    const illumBase=getIlluminant(wl,false);
+    const illum=illumBase.map(v=>v*intensity);
+    const xb=wl.map(x=>interp1(CMF_W,XB,x,0)),yb=wl.map(x=>interp1(CMF_W,YB,x,0)),zb=wl.map(x=>interp1(CMF_W,ZB,x,0));
+    const denom=trapz(wl,illumBase.map((v,i)=>v*yb[i])); if(mode==='object'&&denom<=0)throw Error('Illuminant has zero overlap with CIE ȳ.');
+    const k=mode==='object'?1/denom:1;
+    const whiteXYZ=mode==='object'?[k*trapz(wl,illumBase.map((v,i)=>v*xb[i])),1,k*trapz(wl,illumBase.map((v,i)=>v*zb[i]))]:[0.95047,1,1.08883];
+    const results=[];
+    inputData.spectra.forEach((sp,j)=>{
+      let s=sp.map(v=>v*scale);let neg=s.some(v=>v<0);if(clip)s=s.map(v=>Math.max(0,v));
+
+      // Object XYZ at reference intensity = 1. This carries chromaticity independent of a uniform intensity scaling.
+      const effBase=mode==='object'?s.map((v,i)=>v*illumBase[i]):s;
+      const X0=k*trapz(wl,effBase.map((v,i)=>v*xb[i])),Y0=k*trapz(wl,effBase.map((v,i)=>v*yb[i])),Z0=k*trapz(wl,effBase.map((v,i)=>v*zb[i]));
+
+      // Reported/display object XYZ includes the requested illumination intensity. Emission behavior is unchanged.
+      const X=mode==='object'?X0*intensity:X0;
+      const Y=mode==='object'?Y0*intensity:Y0;
+      const Z=mode==='object'?Z0*intensity:Z0;
+      const [x,y]=xyzToXy(X0,Y0,Z0);const den=-2*x+12*y+3;const up=den?4*x/den:0,vp=den?9*y/den:0;
+
+      let xyzDisplay;
+      let normalizeRgb=false;
+      if(mode==='object'){
+        // Normalized mode ignores absolute exposure and maximizes the in-gamut display level.
+        xyzDisplay=rgbMode==='normalized'?[X0,Y0,Z0]:[X,Y,Z];
+        if($('adapt').checked)xyzDisplay=bradfordAdapt(xyzDisplay,whiteXYZ);
+        normalizeRgb=rgbMode==='normalized';
+      }else{
+        xyzDisplay=[X,Y,Z];
+        if($('normalizeEmission').checked&&Y>0){xyzDisplay=[X/Y,1,Z/Y];normalizeRgb=true;}
+      }
+
+      const srgb=srgbFromXYZ(xyzDisplay,normalizeRgb); const hex=rgbHex(srgb.rgb);
+      const eff=mode==='object'?s.map((v,i)=>v*illum[i]):s;
+      results.push({name:inputData.names[j],X,Y,Z,X0,Y0,Z0,x,y,up,vp,rgb:srgb.rgb,hex,oog:srgb.oog,neg,eff,spectrum:s,intensity,rgbMode});
+    });
+    lastResults=results;renderResults(results);renderSpectrumPlot(wl,results);renderIllumPlot(wl,illum,results,mode);renderCIE(results);
+    const wx=xyzToXy(...whiteXYZ);
+    const displayText=mode==='object'?(rgbMode==='intensity'?`intensity-aware RGB, I = ${intensity}`:'normalized / saturated RGB'):'emission RGB';
+    setStatus('calcStatus',`Calculated ${results.length} spectrum(s). Illuminant white xy = ${wx[0].toFixed(5)}, ${wx[1].toFixed(5)} · ${displayText}.`,'good');
+  }catch(e){setStatus('calcStatus',e.message,'bad');}
+}
+
+function renderResults(rs){const root=$('results');root.innerHTML='';rs.forEach(r=>{const d=document.createElement('div');d.className='result-card';const rgbInfo=r.rgbMode==='normalized'?'normalized / saturated':`intensity-aware (I=${r.intensity})`;d.innerHTML=`<div class="result-head"><div><div class="result-name" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</div><span class="pill">${r.hex}</span></div><div class="swatch" style="background:${r.hex}"></div></div><div class="kv"><div class="k">XYZ</div><div>${r.X.toPrecision(6)}, ${r.Y.toPrecision(6)}, ${r.Z.toPrecision(6)}</div><div class="k">xy</div><div>${r.x.toFixed(6)}, ${r.y.toFixed(6)}</div><div class="k">u′v′</div><div>${r.up.toFixed(6)}, ${r.vp.toFixed(6)}</div><div class="k">sRGB</div><div>${r.rgb.join(', ')}</div><div class="k">RGB mode</div><div>${rgbInfo}</div><div class="k">gamut</div><div>${r.oog?'clipped':'inside sRGB'}${r.neg?' · negative input detected':''}</div></div>`;root.appendChild(d);});}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+function lineSVG(series,xlabel='Wavelength (nm)',ylabel='Relative value'){
+  const W=660,H=300,p={l:48,r:16,t:14,b:38}; let xs=series.flatMap(s=>s.x),ys=series.flatMap(s=>s.y.filter(Number.isFinite));
+  if(!xs.length)return '<div class="hint">No data.</div>';let xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(0,...ys),ymax=Math.max(...ys);if(ymax===ymin)ymax=ymin+1;
+  const X=x=>p.l+(x-xmin)/(xmax-xmin)*(W-p.l-p.r),Y=y=>H-p.b-(y-ymin)/(ymax-ymin)*(H-p.t-p.b);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  for(let i=0;i<=5;i++){const x=xmin+(xmax-xmin)*i/5,px=X(x);s+=`<line class="grid" x1="${px}" y1="${p.t}" x2="${px}" y2="${H-p.b}"/><text class="tick" x="${px}" y="${H-18}" text-anchor="middle">${Math.round(x)}</text>`;}
+  for(let i=0;i<=4;i++){const y=ymin+(ymax-ymin)*i/4,py=Y(y);s+=`<line class="grid" x1="${p.l}" y1="${py}" x2="${W-p.r}" y2="${py}"/><text class="tick" x="${p.l-7}" y="${py+3}" text-anchor="end">${fmtTick(y)}</text>`;}
+  const palette=['#2563eb','#d92d20','#039855','#7f56d9','#f79009','#0891b2','#c11574','#475467'];
+  series.forEach((a,i)=>{const pts=a.x.map((x,j)=>`${X(x).toFixed(1)},${Y(a.y[j]).toFixed(1)}`).join(' ');s+=`<polyline fill="none" stroke="${palette[i%palette.length]}" stroke-width="1.7" points="${pts}"/>`;});
+  s+=`<line class="axis" x1="${p.l}" y1="${H-p.b}" x2="${W-p.r}" y2="${H-p.b}"/><line class="axis" x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${H-p.b}"/><text class="tick" x="${W/2}" y="${H-4}" text-anchor="middle">${xlabel}</text><text class="tick" transform="translate(12 ${H/2}) rotate(-90)" text-anchor="middle">${ylabel}</text>`;
+  let lx=p.l+6;series.slice(0,6).forEach((a,i)=>{s+=`<line x1="${lx}" y1="12" x2="${lx+16}" y2="12" stroke="${palette[i%palette.length]}" stroke-width="2"/><text class="legend" x="${lx+20}" y="15">${escapeHtml(a.name)}</text>`;lx+=Math.min(110,35+a.name.length*6);});
+  return s+'</svg>';
+}
+function fmtTick(v){const a=Math.abs(v);return a>=1000||a>0&&a<0.01?v.toExponential(1):v.toFixed(a<2?2:a<20?1:0);}
+function renderSpectrumPlot(wl,rs){$('spectrumPlot').innerHTML=lineSVG(rs.map(r=>({name:r.name,x:wl,y:r.spectrum})),'Wavelength (nm)','Spectrum');}
+function renderIllumPlot(wl,illum,rs,mode){const arr=[{name:'Illuminant',x:wl,y:normalizeArray(illum)}];if(mode==='object'&&rs[0])arr.push({name:'Effective SPD #1',x:wl,y:normalizeArray(rs[0].eff)});else if(rs[0])arr.push({name:'Emission SPD #1',x:wl,y:normalizeArray(rs[0].eff)});$('illumPlot').innerHTML=lineSVG(arr,'Wavelength (nm)','Normalized');}
+function normalizeArray(a){const m=Math.max(...a.map(v=>Math.abs(v)));return m>0?a.map(v=>v/m):a.slice();}
+
+function pointInPolygon(x,y,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i][0], yi=poly[i][1], xj=poly[j][0], yj=poly[j][1];
+    const intersect=((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/((yj-yi)||1e-12) + xi);
+    if(intersect)inside=!inside;
+  }
+  return inside;
+}
+
+function renderCIE(rs){
+  const equalAxes=$('cieEqualAxes')?$('cieEqualAxes').checked:true;
+  const showBg=$('cieBg')?$('cieBg').checked:true;
+  const xmin=0,xmax=.8,ymin=0,ymax=.9,xrange=xmax-xmin,yrange=ymax-ymin;
+  const p={l:55,r:25,t:20,b:45};
+  let W=700,H=500;
+  if(equalAxes){
+    const plotH=420, scale=plotH/yrange, plotW=scale*xrange;
+    W=p.l+p.r+plotW; H=p.t+p.b+plotH;
+  }
+  const X=x=>p.l+(x-xmin)/(xmax-xmin)*(W-p.l-p.r),Y=y=>H-p.b-(y-ymin)/(ymax-ymin)*(H-p.t-p.b);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="CIE 1931 xy chromaticity diagram">`;
+  for(let i=0;i<=8;i++){const x=i*.1,px=X(x);s+=`<line class="grid" x1="${px}" y1="${p.t}" x2="${px}" y2="${H-p.b}"/><text class="tick" x="${px}" y="${H-22}" text-anchor="middle">${x.toFixed(1)}</text>`;}
+  for(let i=0;i<=9;i++){const y=i*.1,py=Y(y);s+=`<line class="grid" x1="${p.l}" y1="${py}" x2="${W-p.r}" y2="${py}"/><text class="tick" x="${p.l-8}" y="${py+3}" text-anchor="end">${y.toFixed(1)}</text>`;}
+  const locus=[];CMF.forEach(r=>{const q=r[1]+r[2]+r[3];if(q>0)locus.push([r[1]/q,r[2]/q,r[0]]);});
+  const poly=locus.map(v=>[v[0],v[1]]);
+  const first=locus[0],last=locus[locus.length-1];
+  poly.push([first[0],first[1]]);
+  const polyPts=poly.map(q=>`${X(q[0])},${Y(q[1])}`).join(' ');
+  s+=`<defs><clipPath id="cieClip"><polygon points="${polyPts}"/></clipPath></defs>`;
+  if(showBg){
+    const dx=0.01,dy=0.01;
+    s+=`<g clip-path="url(#cieClip)">`;
+    for(let x=xmin;x<=xmax-dx/2;x+=dx){
+      for(let y=ymin;y<=ymax-dy/2;y+=dy){
+        const cx=x+dx/2, cy=y+dy/2;
+        if(!pointInPolygon(cx,cy,poly)) continue;
+        const XYZ=xyToXYZ(cx,cy);
+        const rgb=srgbFromXYZ(XYZ,true).rgb;
+        const fill=rgbHex(rgb);
+        s+=`<rect x="${X(x)}" y="${Y(y+dy)}" width="${X(x+dx)-X(x)+0.4}" height="${Y(y)-Y(y+dy)+0.4}" fill="${fill}" opacity="0.92"/>`;
+      }
+    }
+    s+=`</g>`;
+  }
+  for(let i=0;i<locus.length-1;i++){const a=locus[i],b=locus[i+1];s+=`<line x1="${X(a[0])}" y1="${Y(a[1])}" x2="${X(b[0])}" y2="${Y(b[1])}" stroke="${wavelengthColor(a[2])}" stroke-width="3"/>`;}
+  s+=`<line x1="${X(first[0])}" y1="${Y(first[1])}" x2="${X(last[0])}" y2="${Y(last[1])}" stroke="#8b5cf6" stroke-width="2"/>`;
+  const prim=[[.64,.33],[.30,.60],[.15,.06],[.64,.33]];s+=`<polyline fill="none" stroke="#667085" stroke-dasharray="5 4" stroke-width="1.5" points="${prim.map(q=>`${X(q[0])},${Y(q[1])}`).join(' ')}"/>`;
+  const palette=['#111827','#2563eb','#d92d20','#039855','#7f56d9','#f79009','#0891b2'];rs.forEach((r,i)=>{s+=`<circle cx="${X(r.x)}" cy="${Y(r.y)}" r="5" fill="${r.hex}" class="pt"/><text class="legend" x="${X(r.x)+7}" y="${Y(r.y)-7}" fill="${palette[i%palette.length]}">${escapeHtml(r.name)}</text>`;});
+  s+=`<line class="axis" x1="${p.l}" y1="${H-p.b}" x2="${W-p.r}" y2="${H-p.b}"/><line class="axis" x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${H-p.b}"/><text class="tick" x="${(p.l+W-p.r)/2}" y="${H-5}" text-anchor="middle">CIE x</text><text class="tick" transform="translate(15 ${H/2}) rotate(-90)" text-anchor="middle">CIE y</text></svg>`;
+  $('ciePlot').innerHTML=s;
+}
+function wavelengthColor(w){let r=0,g=0,b=0;if(w>=380&&w<440){r=-(w-440)/60;b=1}else if(w<490){g=(w-440)/50;b=1}else if(w<510){g=1;b=-(w-510)/20}else if(w<580){r=(w-510)/70;g=1}else if(w<645){r=1;g=-(w-645)/65}else if(w<=780){r=1}let f=w<420?0.3+0.7*(w-380)/40:w>700?0.3+0.7*(780-w)/80:1;return `rgb(${Math.round(255*r*f)},${Math.round(255*g*f)},${Math.round(255*b*f)})`;}
+
+let importedSpectraEntries=[]; // [{fileName,name,wavelength,values}]
+
+function importedRefsInExpression(src){
+  const refs=[];
+  const re=/\bi(\d+)\b/gi;
+  let m;
+  while((m=re.exec(src))!==null){const idx=Number(m[1]);if(!refs.includes(idx))refs.push(idx);}
+  return refs.sort((a,b)=>a-b);
+}
+function gridsMatch(a,b){return a.length===b.length&&a.every((v,i)=>Math.abs(v-b[i])<=1e-10*Math.max(1,Math.abs(v),Math.abs(b[i])));}
+function importedEntry(n){
+  const e=importedSpectraEntries[n-1];
+  if(!e)throw Error(`I${n} is not available. ${importedSpectraEntries.length} imported spectrum(s) are loaded.`);
+  return e;
+}
+function importedSpectrumValue(name,wl){
+  const m=/^i(\d+)$/i.exec(name);
+  if(!m)return undefined;
+  if(!importedSpectraEntries.length)throw Error('Expression uses '+name.toUpperCase()+' but no optional spectrum file is imported.');
+  const e=importedEntry(Number(m[1]));
+  // Exact grid points are returned directly; otherwise interpolate to the active grid.
+  return interp1(e.wavelength,e.values,wl,0);
+}
+function mismatchInfo(indices){
+  const ids=(indices&&indices.length?indices:Array.from({length:importedSpectraEntries.length},(_,i)=>i+1));
+  if(ids.length<2)return {mismatch:false,base:null,different:[],rangeLimited:[]};
+  const base=importedEntry(ids[0]);
+  const different=[],rangeLimited=[];
+  for(const id of ids.slice(1)){
+    const e=importedEntry(id);
+    if(!gridsMatch(base.wavelength,e.wavelength))different.push(id);
+    const b0=base.wavelength[0],b1=base.wavelength.at(-1),e0=e.wavelength[0],e1=e.wavelength.at(-1);
+    if(e0>b0||e1<b1)rangeLimited.push(id);
+  }
+  return {mismatch:different.length>0,base:ids[0],different,rangeLimited};
+}
+function importedAliasesText(){
+  return importedSpectraEntries.map((e,i)=>`I${i+1}=${e.name} (${e.wavelength.length} pts, ${e.wavelength[0]}–${e.wavelength.at(-1)} nm)`).join(' · ');
+}
+function updateImportedSpectrumStatus(){
+  if(!importedSpectraEntries.length){setStatus('importedSpectrumStatus','No optional spectra imported.');return;}
+  const info=mismatchInfo();
+  let msg=`Loaded ${importedSpectraEntries.length} imported spectrum(s): ${importedAliasesText()}. Final input is unchanged.`;
+  if(info.mismatch){
+    msg+=` WARNING: wavelength grids do not all match. If mismatched spectra are used together, I${info.base} defines the calculation grid and the others are linearly interpolated`;
+    if(info.rangeLimited.length)msg+=`; values outside an imported spectrum's wavelength range are treated as 0`;
+    msg+='.';
+    setStatus('importedSpectrumStatus',msg,'warn');
+  }else setStatus('importedSpectrumStatus',msg,'good');
+}
+function useImportedSpectraAsFinalInput(){
+  try{
+    if(!importedSpectraEntries.length)throw Error('Import one or more reflectance / transmittance spectra first.');
+    const base=importedSpectraEntries[0],wl=base.wavelength.slice();
+    const info=mismatchInfo();
+    const names=importedSpectraEntries.map(e=>e.name.replace(/[\r\n,;\t]+/g,'_'));
+    const lines=['wavelength,'+names.join(',')];
+    for(let i=0;i<wl.length;i++){
+      const x=wl[i];
+      const row=[x,...importedSpectraEntries.map(e=>interp1(e.wavelength,e.values,x,0))];
+      lines.push(row.map(v=>typeof v==='number'?Number(v.toPrecision(12)):v).join(','));
+    }
+    $('dataText').value=lines.join('\n');
+    $('scale').value='1';
+    inputData=parseMatrixText($('dataText').value);
+    if(info.mismatch){
+      setStatus('inputStatus',`WARNING: ${inputData.spectra.length} imported spectra loaded as final input on I1 wavelength grid (${wl.length} points). Mismatched spectra were linearly interpolated${info.rangeLimited.length?'; out-of-range values were set to 0':''}.`,'warn');
+    }else setStatus('inputStatus',`${inputData.spectra.length} imported spectrum(s) loaded as final input, ${wl.length} wavelength points.`,'good');
+    calculate();
+  }catch(err){setStatus('inputStatus',err.message,'bad');}
+}
+
+function buildAnalyticSample(append=false){
+  try{
+    const exprText=$('sampleExpr').value;
+    const refs=importedRefsInExpression(exprText);
+    let wl;
+    let refGridWarning='';
+    if(refs.length){
+      if(!importedSpectraEntries.length)throw Error('Expression references imported spectrum '+refs.map(i=>'I'+i).join(', ')+' but no optional spectrum file is loaded.');
+      refs.forEach(i=>importedEntry(i));
+      const base=importedEntry(refs[0]);
+      wl=base.wavelength.slice();
+      const info=mismatchInfo(refs);
+      if(info.mismatch){
+        refGridWarning=` WARNING: ${refs.map(i=>'I'+i).join(', ')} do not share the same wavelength grid. I${refs[0]} defines the output grid; the others are linearly interpolated${info.rangeLimited.length?'; out-of-range values are 0':''}.`;
+      }
+    }else{
+      const start=Number($('sampleWlStart').value), end=Number($('sampleWlEnd').value), step=Number($('sampleWlStep').value);
+      if(!Number.isFinite(start)||!Number.isFinite(end)||!Number.isFinite(step)||step<=0||end<=start)throw Error('Use a valid wavelength range with λ end > λ start and λ step > 0.');
+      const n=Math.floor((end-start)/step+1e-10)+1;
+      if(n<2||n>20000)throw Error('Generated grid must contain between 2 and 20,000 wavelength points.');
+      wl=Array.from({length:n},(_,i)=>start+i*step);
+      if(wl[wl.length-1]<end-1e-9 && wl.length<20000)wl.push(end);
+    }
+    const f=compileExpression(exprText,importedSpectrumValue);
+    const normalizeFinal=$('sampleNormalize').checked;
+    const rawVals=wl.map(x=>{
+      const v=Number(f(x));
+      if(!Number.isFinite(v))throw Error(`Expression returned a non-finite value at ${x} nm.`);
+      return v;
+    });
+    const rawMin=Math.min(...rawVals), rawMax=Math.max(...rawVals);
+    let normFactor=1;
+    let vals;
+    if(normalizeFinal){
+      const positive=rawVals.map(v=>Math.max(0,v));
+      normFactor=Math.max(...positive);
+      if(!(normFactor>0))throw Error('Final expression has no positive values to normalize.');
+      vals=positive.map(v=>v/normFactor);
+    }else{
+      vals=rawVals.slice();
+    }
+    const name=($('sampleExprName').value||'Analytic_spectrum').trim().replace(/[\r\n,;\t]+/g,'_');
+    if(append){
+      let cur=null;
+      try{cur=parseMatrixText($('dataText').value);}catch(_){cur=null;}
+      if(!cur)throw Error('Load or generate a base spectrum first, then use “Add as another spectrum”.');
+      if(cur.wavelength.length!==wl.length||cur.wavelength.some((v,i)=>Math.abs(v-wl[i])>1e-8*Math.max(1,Math.abs(v))))throw Error('To add a spectrum, its wavelength grid must exactly match the current input grid.');
+      const names=[...cur.names,name];
+      const lines=['wavelength,'+names.join(',')];
+      for(let i=0;i<wl.length;i++){
+        const row=[wl[i],...cur.spectra.map(sp=>sp[i]),vals[i]];
+        lines.push(row.map(v=>typeof v==='number'?Number(v.toPrecision(12)):v).join(','));
+      }
+      $('dataText').value=lines.join('\n');
+    }else{
+      const lines=[`wavelength,${name}`];
+      for(let i=0;i<wl.length;i++)lines.push(`${Number(wl[i].toPrecision(12))},${Number(vals[i].toPrecision(12))}`);
+      $('dataText').value=lines.join('\n');
+    }
+    $('scale').value='1';
+    inputData=parseMatrixText($('dataText').value);
+    const buildMsg=`${append?'Added':'Generated'} “${name}”: ${wl.length} points${refs.length?' · wavelength grid from I'+refs[0]:' · wavelength grid from λ settings'}, raw range ${rawMin.toPrecision(5)} to ${rawMax.toPrecision(5)}${normalizeFinal?`, normalized by max = ${normFactor.toPrecision(5)}`:' (raw expression kept)'}.${refGridWarning}`;
+    setStatus('sampleExprStatus',buildMsg,refGridWarning?'warn':'good');
+    setStatus('inputStatus',`${inputData.spectra.length} spectrum(s), ${inputData.wavelength.length} wavelength points.`,'good');
+    calculate();
+  }catch(err){setStatus('sampleExprStatus',err.message,'bad');}
+}
+
+function matlabNumber(v){
+  if(!Number.isFinite(v))return 'NaN';
+  if(Object.is(v,-0))v=0;
+  return Number(v).toPrecision(15).replace(/(?:\.0+|(?:(\.[0-9]*?)0+))(?=e|$)/,'$1');
+}
+function matlabVector(a,perLine=8){
+  const chunks=[];
+  for(let i=0;i<a.length;i+=perLine)chunks.push('  '+a.slice(i,i+perLine).map(matlabNumber).join(' '));
+  return '[ ...\n'+chunks.join(' ...\n')+'\n]\'';
+}
+function matlabMatrix(rows,perRow=true){
+  return '[ ...\n'+rows.map(r=>'  '+r.map(matlabNumber).join(' ')).join('; ...\n')+'\n]';
+}
+function matlabString(s){return "'"+String(s).replace(/'/g,"''")+"'";}
+function downloadText(filename,text,mime='text/plain;charset=utf-8'){
+  const blob=new Blob([text],{type:mime}),a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href);
+}
+function buildMatlabScript(){
+  if(!inputData)throw Error('Load or generate spectrum data first.');
+  const wl=inputData.wavelength.slice();
+  const spectraRows=wl.map((_,i)=>inputData.spectra.map(sp=>sp[i]));
+  const illumBase=getIlluminant(wl,false);
+  const mode=$('mode').value;
+  const scale=Number($('scale').value);
+  const clipNeg=$('clipNeg').checked;
+  const intensity=Math.max(0,Number($('illumIntensity').value)||0);
+  const rgbMode=$('rgbDisplayMode').value;
+  const adapt=$('adapt').checked;
+  const normalizeEmission=$('normalizeEmission').checked;
+  const equalAxes=$('cieEqualAxes').checked;
+  const cieBg=$('cieBg').checked;
+  const names='{'+inputData.names.map(matlabString).join(', ')+'}';
+  const cmfMat=matlabMatrix(CMF.map(r=>[r[0],r[1],r[2],r[3]]));
+  const header=`%% Spectrum -> CIE & sRGB export\n% Generated by Spectrum -> CIE & sRGB web tool.\n% This script is self-contained and reproduces the current web-tool state.\n% Default behavior: calculate results and create figures only; no files are written.\n% Set saveFiles = true below only when you explicitly want CSV/MAT/PNG/FIG outputs.\n% Main workspace output: results (MATLAB table).\n\nclear; close all; clc;\nsaveFiles = false;\n\n`;
+  const data=`%% Embedded input and settings\nwl = ${matlabVector(wl)};\nspectra = ${matlabMatrix(spectraRows)};\nspectrumNames = ${names};\nmode = ${matlabString(mode)};\nscaleFactor = ${matlabNumber(scale)};\nclipNegative = ${clipNeg?'true':'false'};\nillumBase = ${matlabVector(illumBase)};\nillumIntensity = ${matlabNumber(intensity)};\nrgbDisplayMode = ${matlabString(rgbMode)};\nadaptToD65 = ${adapt?'true':'false'};\nnormalizeEmissionPreview = ${normalizeEmission?'true':'false'};\nshowCIEBackground = ${cieBg?'true':'false'};\nequalCIEAxes = ${equalAxes?'true':'false'};\n\n% CIE 1931 2 degree standard observer (5 nm tabulation embedded by the web tool)\ncmf = ${cmfMat};\n\n`;
+  const body=String.raw`%% Colorimetric calculation
+xbar = interp1(cmf(:,1),cmf(:,2),wl,'linear',0);
+ybar = interp1(cmf(:,1),cmf(:,3),wl,'linear',0);
+zbar = interp1(cmf(:,1),cmf(:,4),wl,'linear',0);
+
+spectra = spectra * scaleFactor;
+if clipNegative
+    spectra = max(spectra,0);
+end
+
+nSpec = size(spectra,2);
+X = zeros(nSpec,1); Y = zeros(nSpec,1); Z = zeros(nSpec,1);
+X0 = zeros(nSpec,1); Y0 = zeros(nSpec,1); Z0 = zeros(nSpec,1);
+x = zeros(nSpec,1); y = zeros(nSpec,1); up = zeros(nSpec,1); vp = zeros(nSpec,1);
+rgb = zeros(nSpec,3); outOfGamut = false(nSpec,1); HEX = strings(nSpec,1);
+
+if strcmp(mode,'object')
+    denom = trapz(wl,illumBase.*ybar);
+    if denom <= 0
+        error('Illuminant has zero overlap with CIE ybar.');
+    end
+    k = 1/denom;
+    whiteXYZ = [k*trapz(wl,illumBase.*xbar), 1, k*trapz(wl,illumBase.*zbar)];
+else
+    k = 1;
+    whiteXYZ = [0.95047 1 1.08883];
+end
+
+for j = 1:nSpec
+    s = spectra(:,j);
+    if strcmp(mode,'object')
+        effBase = s .* illumBase;
+    else
+        effBase = s;
+    end
+
+    X0(j) = k*trapz(wl,effBase.*xbar);
+    Y0(j) = k*trapz(wl,effBase.*ybar);
+    Z0(j) = k*trapz(wl,effBase.*zbar);
+
+    if strcmp(mode,'object')
+        X(j) = X0(j)*illumIntensity;
+        Y(j) = Y0(j)*illumIntensity;
+        Z(j) = Z0(j)*illumIntensity;
+    else
+        X(j) = X0(j); Y(j) = Y0(j); Z(j) = Z0(j);
+    end
+
+    q = X0(j)+Y0(j)+Z0(j);
+    if q > 1e-15
+        x(j)=X0(j)/q; y(j)=Y0(j)/q;
+    end
+    denuv = -2*x(j)+12*y(j)+3;
+    if abs(denuv)>eps
+        up(j)=4*x(j)/denuv; vp(j)=9*y(j)/denuv;
+    end
+
+    if strcmp(mode,'object')
+        if strcmp(rgbDisplayMode,'normalized')
+            XYZdisplay = [X0(j) Y0(j) Z0(j)];
+            normalizeRGB = true;
+        else
+            XYZdisplay = [X(j) Y(j) Z(j)];
+            normalizeRGB = false;
+        end
+        if adaptToD65
+            XYZdisplay = bradfordAdapt(XYZdisplay,whiteXYZ,[0.95047 1 1.08883]);
+        end
+    else
+        XYZdisplay = [X(j) Y(j) Z(j)];
+        normalizeRGB = false;
+        if normalizeEmissionPreview && Y(j)>0
+            XYZdisplay = XYZdisplay/Y(j);
+            normalizeRGB = true;
+        end
+    end
+
+    [rgb(j,:),outOfGamut(j)] = xyz2srgbLocal(XYZdisplay,normalizeRGB);
+    HEX(j) = sprintf('#%02X%02X%02X',rgb(j,1),rgb(j,2),rgb(j,3));
+end
+
+SpectrumName = string(spectrumNames(:));
+R = rgb(:,1); G = rgb(:,2); B = rgb(:,3);
+results = table(SpectrumName,X,Y,Z,x,y,up,vp,R,G,B,HEX,outOfGamut, ...
+    'VariableNames',{'SpectrumName','X','Y','Z','x','y','u_prime','v_prime','R','G','B','HEX','OutOfGamut'});
+
+disp(results);
+if saveFiles
+    writetable(results,'cie_results_matlab.csv');
+    save('cie_export_data.mat','wl','spectra','spectrumNames','illumBase','illumIntensity','whiteXYZ','results','cmf');
+end
+
+%% Figure 1 - input spectra
+figure('Color','w','Name','Input spectra');
+plot(wl,spectra,'LineWidth',1.5);
+xlabel('Wavelength (nm)'); ylabel('Spectrum');
+grid on; box on; set(gca,'TickDir','in');
+legend(spectrumNames,'Interpreter','none','Location','best');
+title('Input spectra');
+if saveFiles
+    print(gcf,'spectrum_plot.png','-dpng','-r300');
+    savefig(gcf,'spectrum_plot.fig');
+end
+
+%% Figure 2 - illuminant / effective SPD
+figure('Color','w','Name','Illuminant and effective SPD'); hold on;
+plot(wl,normalizeVec(illumBase*illumIntensity),'LineWidth',1.5,'DisplayName','Illuminant');
+if nSpec >= 1
+    if strcmp(mode,'object')
+        eff1 = spectra(:,1).*illumBase*illumIntensity;
+        label1 = ['Effective SPD: ' spectrumNames{1}];
+    else
+        eff1 = spectra(:,1);
+        label1 = ['Emission SPD: ' spectrumNames{1}];
+    end
+    plot(wl,normalizeVec(eff1),'LineWidth',1.5,'DisplayName',label1);
+end
+xlabel('Wavelength (nm)'); ylabel('Normalized');
+grid on; box on; set(gca,'TickDir','in'); legend('Interpreter','none','Location','best');
+title('Illuminant / effective SPD');
+if saveFiles
+    print(gcf,'illuminant_effective_spd.png','-dpng','-r300');
+    savefig(gcf,'illuminant_effective_spd.fig');
+end
+
+%% Figure 3 - CIE 1931 xy diagram
+cmfSum = sum(cmf(:,2:4),2);
+valid = cmfSum>0;
+locusX = cmf(valid,2)./cmfSum(valid);
+locusY = cmf(valid,3)./cmfSum(valid);
+locusW = cmf(valid,1);
+
+figure('Color','w','Name','CIE 1931 xy'); hold on;
+if showCIEBackground
+    gx = 0:0.01:0.8; gy = 0:0.01:0.9;
+    [GX,GY] = meshgrid(gx,gy);
+    inside = inpolygon(GX,GY,locusX,locusY);
+    px = GX(inside); py = GY(inside);
+    bg = zeros(numel(px),3);
+    for ii=1:numel(px)
+        bg(ii,:) = xy2displayRGB(px(ii),py(ii));
+    end
+    scatter(px,py,55,bg,'s','filled','MarkerEdgeColor','none');
+end
+
+for ii=1:numel(locusX)-1
+    c = wavelengthRGB(locusW(ii));
+    plot(locusX(ii:ii+1),locusY(ii:ii+1),'Color',c,'LineWidth',2.2);
+end
+plot([locusX(end) locusX(1)],[locusY(end) locusY(1)],'Color',[0.55 0.35 0.9],'LineWidth',1.8);
+plot([0.64 0.30 0.15 0.64],[0.33 0.60 0.06 0.33],'--','Color',[0.4 0.4 0.4],'LineWidth',1.2);
+
+for j=1:nSpec
+    c = rgb(j,:)/255;
+    plot(x(j),y(j),'o','MarkerSize',7,'MarkerFaceColor',c,'MarkerEdgeColor','k','LineWidth',1);
+    text(x(j)+0.008,y(j)+0.008,spectrumNames{j},'Interpreter','none','FontSize',9);
+end
+xlabel('CIE x'); ylabel('CIE y');
+axis([0 0.8 0 0.9]);
+if equalCIEAxes, axis equal; axis([0 0.8 0 0.9]); end
+grid on; box on; set(gca,'TickDir','in');
+title('CIE 1931 xy chromaticity');
+if saveFiles
+    print(gcf,'cie_xy_plot.png','-dpng','-r300');
+    savefig(gcf,'cie_xy_plot.fig');
+    fprintf('\nSaved CSV/MAT data and PNG/FIG plot files.\n');
+else
+    fprintf('\nCalculation complete. Results are in the workspace and figures are open. No files were saved.\n');
+end
+
+%% Local functions
+function v = normalizeVec(v)
+    m = max(abs(v));
+    if m>0, v=v/m; end
+end
+
+function out = bradfordAdapt(XYZ,srcXYZ,dstXYZ)
+    M = [0.8951 0.2664 -0.1614; -0.7502 1.7135 0.0367; 0.0389 -0.0685 1.0296];
+    Mi = [0.9869929 -0.1470543 0.1599627; 0.4323053 0.5183603 0.0492912; -0.0085287 0.0400428 0.9684867];
+    s = M*srcXYZ(:); d = M*dstXYZ(:); v = M*XYZ(:);
+    out = (Mi*(v.*d./s)).';
+end
+
+function [rgb,oog] = xyz2srgbLocal(XYZ,normalizeRGB)
+    M = [3.2406 -1.5372 -0.4986; -0.9689 1.8758 0.0415; 0.0557 -0.2040 1.0570];
+    lin = (M*XYZ(:)).';
+    if normalizeRGB
+        m=max(lin); if m>0, lin=lin/m; end
+    end
+    oog = any(lin<0 | lin>1);
+    lin = min(max(lin,0),1);
+    enc = zeros(size(lin));
+    low = lin<=0.0031308;
+    enc(low)=12.92*lin(low);
+    enc(~low)=1.055*lin(~low).^(1/2.4)-0.055;
+    rgb = round(255*min(max(enc,0),1));
+end
+
+function rgb = xy2displayRGB(x,y)
+    if y<=0, rgb=[0 0 0]; return; end
+    XYZ=[x/y,1,(1-x-y)/y];
+    [rgb255,~]=xyz2srgbLocal(XYZ,true);
+    rgb=rgb255/255;
+end
+
+function rgb = wavelengthRGB(w)
+    r=0; g=0; b=0;
+    if w>=380 && w<440
+        r=-(w-440)/60; b=1;
+    elseif w<490
+        g=(w-440)/50; b=1;
+    elseif w<510
+        g=1; b=-(w-510)/20;
+    elseif w<580
+        r=(w-510)/70; g=1;
+    elseif w<645
+        r=1; g=-(w-645)/65;
+    elseif w<=780
+        r=1;
+    end
+    if w<420
+        f=0.3+0.7*(w-380)/40;
+    elseif w>700
+        f=0.3+0.7*(780-w)/80;
+    else
+        f=1;
+    end
+    rgb=max(0,min(1,[r g b]*f));
+end
+`;
+  return header+data+body;
+}
+function exportMatlabScript(){
+  try{
+    inputData=parseMatrixText($('dataText').value);
+    calculate();
+    const script=buildMatlabScript();
+    downloadText('spectrum_cie_export.m',script,'text/x-matlab;charset=utf-8');
+    setStatus('calcStatus','MATLAB script exported. It reproduces the data and opens the plots without saving files by default; set saveFiles = true in MATLAB only when you want files written.','good');
+  }catch(err){setStatus('calcStatus','MATLAB export: '+err.message,'bad');}
+}
+
+function updateIllumUI(){const t=$('illumType').value;$('bbParams').classList.toggle('hidden',t!=='BB');$('peakParams').classList.toggle('hidden',!(t==='GAUSS'||t==='LORENTZ'));$('exprParams').classList.toggle('hidden',t!=='EXPR');$('importParams').classList.toggle('hidden',t!=='IMPORT');setStatus('illumStatus',t==='IMPORT'?(importedIllum?'Imported illuminant ready.':'Import an illuminant file.'):t+' selected.');}
+$('illumType').addEventListener('change',updateIllumUI);
+document.querySelectorAll('.illum-example-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  $('illumType').value='EXPR';updateIllumUI();$('expr').value=btn.dataset.expr;$('expr').focus();
+  setStatus('illumStatus','Example expression loaded. Press Calculate to apply.','good');
+}));
+const SAMPLE_FUNCTION_NAMES=new Set(['exp','log','sqrt','abs','sin','cos','tan','pow','gauss','lorentz','bb','step','heaviside','shortpass','longpass','bandpass','notch']);
+const SAMPLE_CONSTANT_NAMES=new Set(['pi','e']);
+function escapeExprHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function highlightSampleExpression(){
+  const src=$('sampleExpr').value;
+  let out='',i=0;
+  while(i<src.length){
+    const c=src[i];
+    if(/[A-Za-z_]/.test(c)){
+      let j=i+1;while(j<src.length&&/[A-Za-z0-9_]/.test(src[j]))j++;
+      const word=src.slice(i,j), low=word.toLowerCase();
+      let cls='';
+      if(SAMPLE_FUNCTION_NAMES.has(low))cls='tok-fn';
+      else if(low==='wl')cls='tok-var';
+      else if(SAMPLE_CONSTANT_NAMES.has(low)||/^i\d+$/.test(low))cls='tok-const';
+      else cls='tok-invalid';
+      out+=`<span class="${cls}">${escapeExprHtml(word)}</span>`;i=j;continue;
+    }
+    if(/[0-9.]/.test(c) && (/[0-9]/.test(c) || (c==='.' && /[0-9]/.test(src[i+1]||'')))){
+      const m=src.slice(i).match(/^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/);
+      if(m){out+=`<span class="tok-num">${escapeExprHtml(m[0])}</span>`;i+=m[0].length;continue;}
+    }
+    if('+-*/^='.includes(c)){out+=`<span class="tok-op">${escapeExprHtml(c)}</span>`;i++;continue;}
+    if('(),'.includes(c)){out+=`<span class="tok-paren">${escapeExprHtml(c)}</span>`;i++;continue;}
+    out+=escapeExprHtml(c);i++;
+  }
+  // A final newline keeps the overlay height in sync when the textarea ends with a newline.
+  if(src.endsWith('\n'))out+='\n';
+  $('sampleExprHighlight').innerHTML=out || ' ';
+  syncSampleExprScroll();
+}
+function syncSampleExprScroll(){
+  const ta=$('sampleExpr'),hi=$('sampleExprHighlight');
+  if(!ta||!hi)return;
+  hi.scrollTop=ta.scrollTop;hi.scrollLeft=0;
+}
+function setSampleExprValue(v){
+  $('sampleExpr').value=v;
+  updateSampleExprMeta();
+  highlightSampleExpression();
+}
+function updateSampleExprMeta(){
+  const t=$('sampleExpr').value;
+  const lines=t? t.split(/\r?\n/).length : 0;
+  $('sampleExprMeta').textContent=`${lines} line${lines===1?'':'s'} · ${t.length} chars`;
+}
+function validateSampleExpression(showGood=true){
+  const src=$('sampleExpr').value.trim();
+  if(!src){$('sampleSyntaxStatus').className='hint syntax-bad';$('sampleSyntaxStatus').textContent='Expression is empty.';updateSampleExprMeta();return false;}
+  try{
+    const refs=importedRefsInExpression(src);
+    if(refs.length&&!importedSpectraEntries.length)throw Error('Expression references '+refs.map(i=>'I'+i).join(', ')+' but no optional spectrum file is loaded.');
+    if(refs.length)refs.forEach(i=>importedEntry(i));
+    const f=compileExpression(src,importedSpectrumValue);
+    const testGrid=refs.length?importedEntry(refs[0]).wavelength:null;
+    const testWl=refs.length?testGrid[Math.floor(testGrid.length/2)]:((Number($('sampleWlStart').value)+Number($('sampleWlEnd').value))/2 || 550);
+    const v=Number(f(testWl));
+    if(!Number.isFinite(v))throw Error(`Expression is non-finite at ${testWl.toFixed(1)} nm.`);
+    const info=refs.length?mismatchInfo(refs):{mismatch:false,rangeLimited:[]};
+    $('sampleSyntaxStatus').className=info.mismatch?'hint syntax-warn':'hint syntax-ok';
+    $('sampleSyntaxStatus').textContent=showGood?(info.mismatch?`⚠ Syntax OK, but referenced spectra use different wavelength grids. I${refs[0]} will define the grid; other spectra will be linearly interpolated${info.rangeLimited.length?' and out-of-range values will be 0':''}.`:`✓ Syntax OK · value at ${testWl.toFixed(1)} nm = ${Number(v.toPrecision(6))}`):(info.mismatch?'⚠ Syntax OK · wavelength-grid mismatch':'✓ Syntax OK');
+    updateSampleExprMeta();return true;
+  }catch(err){
+    $('sampleSyntaxStatus').className='hint syntax-bad';
+    $('sampleSyntaxStatus').textContent='✕ '+err.message;
+    updateSampleExprMeta();return false;
+  }
+}
+function formatSampleExpression(){
+  const src=$('sampleExpr').value.trim(); if(!src)return;
+  sampleBuilderHistory.push(src);
+  let depth=0, out='', token='', i=0;
+  const flush=()=>{if(token){out+=token;token='';}};
+  while(i<src.length){
+    const c=src[i];
+    if(/\s/.test(c)){i++;continue;}
+    if(c==='('){flush();out+='(';depth++;i++;continue;}
+    if(c===')'){flush();out+=')';depth=Math.max(0,depth-1);i++;continue;}
+    if(c===','){flush();out+=', ';i++;continue;}
+    if('+-*/^'.includes(c)){
+      flush();
+      const prev=out.trimEnd().slice(-1);
+      const unary=(c==='+'||c==='-') && (!prev || '([,+-*/^'.includes(prev));
+      if(unary){out+=c;i++;continue;}
+      if(depth===0 && (c==='+'||c==='-')) out+=`\n${c} `;
+      else out+=` ${c} `;
+      i++;continue;
+    }
+    token+=c;i++;
+  }
+  flush();
+  $('sampleExpr').value=out.replace(/[ \t]+\n/g,'\n').trim();
+  updateSampleExprMeta();highlightSampleExpression();validateSampleExpression(false);$('sampleExpr').focus();
+}
+function compactSampleExpression(){
+  const src=$('sampleExpr').value.trim(); if(!src)return;
+  sampleBuilderHistory.push(src);
+  try{
+    const tok=tokenizeExpr(src);
+    let out='';
+    tok.forEach((t,i)=>{
+      const prev=tok[i-1];
+      const word=t.t==='num'||t.t==='id', prevWord=prev&&(prev.t==='num'||prev.t==='id');
+      if(word&&prevWord)out+=' ';
+      out+=t.t==='num'?String(t.v):t.v;
+    });
+    $('sampleExpr').value=out;updateSampleExprMeta();highlightSampleExpression();validateSampleExpression(false);$('sampleExpr').focus();
+  }catch(_){validateSampleExpression(true);}
+}
+function setEditorExpanded(expand){
+  $('sampleExprShell').classList.toggle('expanded',expand);
+  $('editorBackdrop').classList.toggle('show',expand);
+  $('sampleExpandBtn').textContent=expand?'Close expanded':'Expand editor';
+  if(expand)setTimeout(()=>$('sampleExpr').focus(),0);
+}
+let sampleSyntaxTimer=null;
+$('sampleExpr').addEventListener('input',()=>{updateSampleExprMeta();highlightSampleExpression();clearTimeout(sampleSyntaxTimer);sampleSyntaxTimer=setTimeout(()=>validateSampleExpression(false),300);});
+$('sampleExpr').addEventListener('scroll',syncSampleExprScroll);
+$('sampleExpr').addEventListener('keydown',e=>{
+  if(e.key==='Tab'){
+    e.preventDefault();const el=e.currentTarget,start=el.selectionStart,end=el.selectionEnd;
+    el.setRangeText('  ',start,end,'end');el.dispatchEvent(new Event('input'));
+  }else if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
+    e.preventDefault();buildAnalyticSample(false);
+  }else if(e.key==='Escape'&&$('sampleExprShell').classList.contains('expanded')) setEditorExpanded(false);
+});
+$('sampleFormatBtn').addEventListener('click',formatSampleExpression);
+$('sampleCompactBtn').addEventListener('click',compactSampleExpression);
+$('sampleCheckBtn').addEventListener('click',()=>validateSampleExpression(true));
+$('sampleExpandBtn').addEventListener('click',()=>setEditorExpanded(!$('sampleExprShell').classList.contains('expanded')));
+$('editorBackdrop').addEventListener('click',()=>setEditorExpanded(false));
+updateSampleExprMeta();highlightSampleExpression();validateSampleExpression(false);
+
+let sampleBuilderOp='+';
+let sampleBuilderHistory=[];
+function setSampleBuilderOp(op){
+  sampleBuilderOp=op;
+  document.querySelectorAll('.sample-op-btn').forEach(b=>b.classList.toggle('active',b.dataset.op===op));
+  setStatus('sampleExprStatus',`Next function will be combined with “${op==='*'?'×':op==='/'?'÷':op}”.`,'good');
+}
+function appendSampleExpression(piece){
+  const input=$('sampleExpr');
+  const cur=input.value.trim();
+  sampleBuilderHistory.push(cur);
+  if(!cur){
+    input.value=`(${piece})`;
+    updateSampleExprMeta();highlightSampleExpression();
+  }else{
+    input.value=`(${cur}) ${sampleBuilderOp} (${piece})`;
+    updateSampleExprMeta();highlightSampleExpression();
+  }
+  input.focus();
+  setStatus('sampleExprStatus',`Added function using ${sampleBuilderOp==='*'?'×':sampleBuilderOp==='/'?'÷':sampleBuilderOp}. Expression is automatically grouped with parentheses.`,'good');
+}
+document.querySelectorAll('.sample-op-btn').forEach(btn=>btn.addEventListener('click',()=>setSampleBuilderOp(btn.dataset.op)));
+document.querySelectorAll('.sample-example-btn').forEach(btn=>btn.addEventListener('click',()=>appendSampleExpression(btn.dataset.sampleExpr)));
+$('sampleWrapBtn').addEventListener('click',()=>{
+  const input=$('sampleExpr'),cur=input.value.trim();if(!cur)return;sampleBuilderHistory.push(cur);input.value=`(${cur})`;updateSampleExprMeta();highlightSampleExpression();input.focus();
+  setStatus('sampleExprStatus','Wrapped the current expression in parentheses.','good');
+});
+$('sampleUndoBtn').addEventListener('click',()=>{
+  if(!sampleBuilderHistory.length){setStatus('sampleExprStatus','Nothing to undo.','bad');return;}
+  $('sampleExpr').value=sampleBuilderHistory.pop();updateSampleExprMeta();highlightSampleExpression();$('sampleExpr').focus();setStatus('sampleExprStatus','Undid the last builder action.','good');
+});
+$('sampleClearExprBtn').addEventListener('click',()=>{
+  const cur=$('sampleExpr').value;sampleBuilderHistory.push(cur);$('sampleExpr').value='';updateSampleExprMeta();highlightSampleExpression();$('sampleExpr').focus();setStatus('sampleExprStatus','Expression cleared. Click a function to start building.','good');
+});
+$('generateSampleBtn').addEventListener('click',()=>buildAnalyticSample(false));
+$('addSampleBtn').addEventListener('click',()=>buildAnalyticSample(true));
+$('spectrumFile').addEventListener('change',async e=>{
+  const files=Array.from(e.target.files||[]);if(!files.length)return;
+  try{
+    const entries=[];
+    for(const file of files){
+      const txt=await readFile(file);
+      const baseName=file.name.replace(/\.[^.]+$/,'')||'Imported';
+      const d=parseMatrixText(txt,baseName);
+      d.spectra.forEach((values,j)=>{
+        let name=d.names[j]||`${baseName}_${j+1}`;
+        if(d.spectra.length>1 && /^Spectrum \d+$/i.test(name))name=`${baseName}_${j+1}`;
+        entries.push({fileName:file.name,name,wavelength:d.wavelength.slice(),values:values.slice()});
+      });
+    }
+    importedSpectraEntries=entries;
+    updateImportedSpectrumStatus();
+    highlightSampleExpression();validateSampleExpression(false);
+  }catch(err){importedSpectraEntries=[];setStatus('importedSpectrumStatus','Import failed: '+err.message,'bad');}
+});
+$('useImportedBtn').addEventListener('click',useImportedSpectraAsFinalInput);
+$('clearImportedBtn').addEventListener('click',()=>{importedSpectraEntries=[];$('spectrumFile').value='';updateImportedSpectrumStatus();highlightSampleExpression();validateSampleExpression(false);});
+$('illumFile').addEventListener('change',async e=>{if(!e.target.files[0])return;try{const d=parseMatrixText(await readFile(e.target.files[0]));importedIllum={wavelength:d.wavelength,values:d.spectra[0]};setStatus('illumStatus',`Imported illuminant: ${d.wavelength.length} points, ${d.wavelength[0]}–${d.wavelength.at(-1)} nm.`,'good');}catch(err){setStatus('illumStatus',err.message,'bad');}});
+$('dataText').addEventListener('change',()=>{try{inputData=parseMatrixText($('dataText').value);setStatus('inputStatus',`${inputData.spectra.length} spectrum(s), ${inputData.wavelength.length} wavelength points.`,'good');}catch(e){setStatus('inputStatus',e.message,'bad');}});
+$('sampleBtn').addEventListener('click',()=>{let lines=['wavelength,Blue_sample,Red_sample'];for(let w=380;w<=780;w+=5){const a=.05+.75*gaussian(w,465,55),b=.04+.85*gaussian(w,625,70);lines.push(`${w},${a.toFixed(6)},${b.toFixed(6)}`)}$('dataText').value=lines.join('\n');inputData=parseMatrixText($('dataText').value);setStatus('inputStatus','Example loaded: two synthetic reflectance spectra.','good');calculate();});
+$('clearBtn').addEventListener('click',()=>{$('dataText').value='';inputData=null;importedSpectraEntries=[];$('spectrumFile').value='';lastResults=[];$('results').innerHTML='<div class="hint">Load or generate a final input spectrum and press Calculate.</div>';$('spectrumPlot').innerHTML='';$('illumPlot').innerHTML='';$('ciePlot').innerHTML='';setStatus('inputStatus','No final input spectrum.');updateImportedSpectrumStatus();});
+$('calcBtn').addEventListener('click',()=>{try{inputData=parseMatrixText($('dataText').value);}catch(e){setStatus('inputStatus',e.message,'bad');return;}calculate();});
+$('exportBtn').addEventListener('click',()=>{if(!lastResults.length){setStatus('calcStatus','Nothing to export.','bad');return;}const lines=['name,X,Y,Z,x,y,u_prime,v_prime,R,G,B,hex,out_of_sRGB_gamut'];lastResults.forEach(r=>lines.push([JSON.stringify(r.name),r.X,r.Y,r.Z,r.x,r.y,r.up,r.vp,...r.rgb,r.hex,r.oog].join(',')));const blob=new Blob([lines.join('\n')],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='cie_results.csv';a.click();URL.revokeObjectURL(a.href);});
+$('exportMatlabBtn').addEventListener('click',exportMatlabScript);
+$('illumIntensity').addEventListener('input',()=>{if(inputData)calculate();});
+$('rgbDisplayMode').addEventListener('change',()=>{if(inputData)calculate();});
+$('resetRgbBtn').addEventListener('click',()=>{$('rgbDisplayMode').value='normalized';if(inputData)calculate();});
+$('cieEqualAxes').addEventListener('change',()=>{if(lastResults.length)renderCIE(lastResults);});
+$('cieBg').addEventListener('change',()=>{if(lastResults.length)renderCIE(lastResults);});
+
+updateIllumUI();
+</script>
+</body>
+</html>
